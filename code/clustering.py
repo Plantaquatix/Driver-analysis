@@ -7,6 +7,10 @@ Created on Sun Feb 22 21:56:04 2015
 
 import numpy as np
 import os
+from sklearn.decomposition import PCA
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+import pylab as plt # For visualisation
 
 def file_to_array(file_name):
     f = open(file_name,'r')
@@ -122,10 +126,9 @@ def directory_to_data_set(directory):
 
 def driver_analysis(driver_directory):
     """
-        Returns the probability (hard assignements at the moment) that the driver
+        Returns the probability (hard assignments at the moment) that the driver
         is actually doing each trip in the directory.
     """
-    print('Analysing', driver_directory)
     feature_names, dataset, trip_names = directory_to_data_set(driver_directory)
 
     # Apply PCA keeping 70% of the variance (can be changed if more features)
@@ -149,31 +152,28 @@ def driver_analysis(driver_directory):
         cluster_sizes[i] = np.sum(labels == label)
     # Main driver
     main_driver = drivers[np.argmax(cluster_sizes)]
-    # "Porbabilities" is here just cluster assignement to the main driver
+    # "Probabilities" is here just cluster assignment to the main driver
     probabilities = (labels == main_driver)
     return trip_names, probabilities
 
-
-
-
+	
 if __name__ == '__main__':
-    from sklearn.decomposition import PCA
-    from sklearn.cluster import DBSCAN
-    from sklearn.preprocessing import StandardScaler
-
-    import pylab as plt # For visualisation
-
+	# Ignore warning when dividing by zero
+    np.seterr(divide='ignore', invalid='ignore')
+	
     drivers_directory = '../data/drivers/'
     submission_file = '../data/submission.csv'
 
+    print('Listing directories')
     drivers = [directory[0][len(drivers_directory):] for directory in os.walk(drivers_directory)][1:]
     drivers = drivers[:100]
 
     f = open(submission_file, 'w')
     f.write('driver_trip,prob\n')
 
-    for driver in drivers:
+    for i,driver in enumerate(drivers):
+        print('%4d/%d - Analysing driver no.%s' % (i, len(drivers), driver))
         trips, probabilities = driver_analysis(drivers_directory + driver + '/')
-        for i,trip in enumerate(trips):
-            f.write(driver + '_' + trip + ',' + str(1*probabilities[i]) + '\n')
+        for j,trip in enumerate(trips):
+            f.write(driver + '_' + trip + ',' + str(1*probabilities[j]) + '\n')
     f.close()
