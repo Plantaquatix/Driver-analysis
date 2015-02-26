@@ -166,7 +166,6 @@ if __name__ == '__main__':
 
     print('Listing directories')
     drivers = [directory[0][len(drivers_directory):] for directory in os.walk(drivers_directory)][1:]
-    drivers = drivers[:100]
 
     f = open(submission_file, 'w')
     f.write('driver_trip,prob\n')
