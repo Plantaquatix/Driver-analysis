@@ -10,6 +10,7 @@ import os
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 import pylab as plt # For visualisation
 
 def file_to_array(file_name):
@@ -137,42 +138,44 @@ def driver_analysis(driver_directory):
     reduced_dataset = StandardScaler().fit_transform(reduced_dataset)
     # Clustering
     labels = DBSCAN(eps=0.9, min_samples=1).fit_predict(reduced_dataset)
-
     # Visualisation in 1D
 #    plt.hist(reduced_dataset)
 #    plt.figure()
 #    plt.hist(labels)
 
-
     # Get number of drivers
-    drivers = np.unique(labels)
+    clusters = np.unique(labels)
     # Get cluster sizes
-    cluster_sizes = np.zeros((len(drivers)))
-    for i,label in enumerate(drivers):
+    cluster_sizes = np.zeros((len(clusters)))
+    for i,label in enumerate(clusters):
         cluster_sizes[i] = np.sum(labels == label)
-    # Main driver
-    main_driver = drivers[np.argmax(cluster_sizes)]
+    # Cluster no. of the main driver
+    main_driver = clusters[np.argmax(cluster_sizes)]
     # "Probabilities" is here just cluster assignment to the main driver
-    probabilities = (labels == main_driver)
-    return trip_names, probabilities
+    lr = LogisticRegression()
+    lr.fit(reduced_dataset, labels == main_driver)
+    probabilities = lr.predict_proba(reduced_dataset)
 
-	
+    return trip_names, probabilities[:,1]
+
+
 if __name__ == '__main__':
 	# Ignore warning when dividing by zero
     np.seterr(divide='ignore', invalid='ignore')
-	
+
     drivers_directory = '../data/drivers/'
     submission_file = '../data/submission.csv'
 
-    print('Listing directories')
-    drivers = [directory[0][len(drivers_directory):] for directory in os.walk(drivers_directory)][1:]
+    #drivers = [directory[0][len(drivers_directory):] for directory in os.walk(drivers_directory)][1:]
+    drivers = np.loadtxt('../data/drivers.txt', dtype=np.uint) # improved caching
+    drivers = drivers[:5] # subsample
 
     f = open(submission_file, 'w')
     f.write('driver_trip,prob\n')
 
     for i,driver in enumerate(drivers):
-        print('%4d/%d - Analysing driver no.%s' % (i, len(drivers), driver))
-        trips, probabilities = driver_analysis(drivers_directory + driver + '/')
+        print('%4d/%d - Analysing driver no.%u' % (i, len(drivers), driver))
+        trips, probabilities = driver_analysis(drivers_directory + str(driver) + '/')
         for j,trip in enumerate(trips):
-            f.write(driver + '_' + trip + ',' + str(1*probabilities[j]) + '\n')
+            f.write(str(driver) + '_' + trip + ',' + str(1*probabilities[j]) + '\n')
     f.close()
