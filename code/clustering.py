@@ -29,7 +29,7 @@ def trip_to_features(positions):
     """
     Here are my ideas for the features
 
-    The speed should not matter because the trips are not on the same kind of road.
+    The speed should not matter because we can assume it depends mostly on the trip than the driver.
     The acceleration should count. A driver who accelerates and breaks strongly can be distinguished.
     The speed in turns should count. A driver who goes fast in turns is more dangerous.
     The curvature maybe useful to determine if the driver prefers to take small roads or highway.
@@ -74,6 +74,11 @@ def trip_to_features(positions):
         else:
             stopped = False
 
+
+    ###
+    ### Features based on the driver attitude
+    ###
+
     # Features based on acceleration
     features['min_acc'] = np.nanmin(acceleration)
     features['max_acc'] = np.nanmax(acceleration)
@@ -92,13 +97,20 @@ def trip_to_features(positions):
     features['speedturn_mean'] = np.nanmean(speed_turn)
     features['speedturn_std'] = np.nanstd(speed_turn)
 
+    # Features based on Newton forces
+    features['centrifuge_mean'] = np.nanmean(velocity**2 * curvature) # v²/r
+
+    ###
+    ### Features based on the trip properties
+    ###
+
     # Features based on the shape of the trip
     features['dist'] = distance
     features['detour_1'] = (distance / manhattan_distance) if manhattan_distance > 0 else 0. # detour relative to Manhattan distance
     features['detour_2'] = (distance / euclidian_distance) if euclidian_distance > 0 else 0. # detour relative to Euclidian distance
 
-    # Features based on Newton forces
-    features['centrifuge_mean'] = np.nanmean(velocity**2 * curvature) # v²/r
+    # Duration of the trip
+    features['duration'] = len(position_x)
 
     # Features based on stops
     features['stops_n'] = len(stops)
@@ -132,12 +144,14 @@ def driver_analysis(driver_directory):
     """
     feature_names, dataset, trip_names = directory_to_data_set(driver_directory)
 
-    # Apply PCA keeping 70% of the variance (can be changed if more features)
-    reduced_dataset = PCA(0.7).fit_transform(dataset)
+    # Apply PCA keeping 3 features
+    reduced_dataset = PCA(3).fit_transform(dataset)
     # Normalise data (not sure it is necessary)
     reduced_dataset = StandardScaler().fit_transform(reduced_dataset)
     # Clustering
     labels = DBSCAN(eps=0.9, min_samples=1).fit_predict(reduced_dataset)
+
+    #plt.scatter(reduced_dataset[:,0:1], reduced_dataset[:,2])
     # Visualisation in 1D
 #    plt.hist(reduced_dataset)
 #    plt.figure()
