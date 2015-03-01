@@ -75,9 +75,9 @@ def trip_to_features(positions):
             stopped = False
 
 
-    ###
-    ### Features based on the driver attitude
-    ###
+    #############################################
+    ### Features based on the driver attitude ###
+    #############################################
 
     # Features based on acceleration
     features['min_acc'] = np.nanmin(acceleration)
@@ -100,9 +100,9 @@ def trip_to_features(positions):
     # Features based on Newton forces
     features['centrifuge_mean'] = np.nanmean(velocity**2 * curvature) # v²/r
 
-    ###
-    ### Features based on the trip properties
-    ###
+    #############################################
+    ### Features based on the trip properties ###
+    #############################################
 
     # Features based on the shape of the trip
     features['dist'] = distance
@@ -117,7 +117,6 @@ def trip_to_features(positions):
     features['stops_duration'] = np.mean(stops_durations) if len(stops) > 0 else 0
 
     return features
-
 
 def file_to_features(file):
     return trip_to_features(file_to_array(file))
@@ -134,7 +133,6 @@ def directory_to_data_set(directory):
             dataset[i,j] = kv_pairs[key]
 
     return list(features), dataset, [file[:-4] for file in files]
-
 
 
 def driver_analysis(driver_directory):
@@ -180,7 +178,6 @@ if __name__ == '__main__':
     drivers_directory = '../data/drivers/'
     submission_file = '../data/submission.csv'
 
-    #drivers = [directory[0][len(drivers_directory):] for directory in os.walk(drivers_directory)][1:]
     drivers = np.loadtxt('../data/drivers.txt', dtype=np.uint) # improved caching
     drivers = drivers[:5] # subsample
 
@@ -188,7 +185,7 @@ if __name__ == '__main__':
     f.write('driver_trip,prob\n')
 
     for i,driver in enumerate(drivers):
-        print('%4d/%d - Analysing driver no.%u' % (i, len(drivers), driver))
+        print('%4d/%d - Analysing driver no.%u' % (i+1, len(drivers), driver))
         trips, probabilities = driver_analysis(drivers_directory + str(driver) + '/')
         for j,trip in enumerate(trips):
             f.write(str(driver) + '_' + trip + ',' + str(1*probabilities[j]) + '\n')
