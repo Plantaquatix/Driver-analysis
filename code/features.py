@@ -8,6 +8,7 @@ Created on Sun Feb 22 21:56:04 2015
 import numpy as np
 import os
 import pandas as pd
+import random
 
 def file_to_array(file_name):
     f = open(file_name,'r')
@@ -20,6 +21,54 @@ def file_to_array(file_name):
         y.append(float(field[1]))
     return [np.array(x), np.array(y)]
 
+
+def smooth(x,window_len=5,window='hanning'): # http://wiki.scipy.org/Cookbook/SignalSmooth
+    """smooth the data using a window with requested size.
+
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+
+    input:
+        x: the input signal
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+
+    see also:
+
+    numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
+    scipy.signal.lfilter
+
+    TODO: the window parameter could be the window itself if an array instead of a string
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+    if x.ndim != 1:
+        raise(ValueError, "smooth only accepts 1 dimension arrays.")
+    if x.size < window_len:
+        raise(ValueError, "Input vector needs to be bigger than window size.")
+    if window_len<3:
+        return x
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise(ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+    s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+    y=np.convolve(w/w.sum(),s,mode='valid')
+    return y
 
 def trip_to_features(positions):
     """
@@ -34,6 +83,9 @@ def trip_to_features(positions):
     """
     features = {}
     position_x, position_y = positions[0], positions[1]
+    position_x = smooth(position_x)
+    position_y = smooth(position_y)
+
     departure = np.array([position_x[0], position_y[0]])
     arrival = np.array([position_x[-1], position_y[-1]])
     delta_x, delta_y = np.diff(position_x), np.diff(position_y)
@@ -70,7 +122,6 @@ def trip_to_features(positions):
                 stopped = True
         else:
             stopped = False
-
 
     #############################################
     ### Features based on the driver attitude ###
@@ -130,7 +181,7 @@ def file_to_features(file):
     return trip_to_features(file_to_array(file))
 
 def to_pandas():
-    all_drivers = np.loadtxt('../data/drivers.txt', dtype=np.uint)
+    all_drivers = get_all_drivers()
     row_list = []
     row_indices = []
 
@@ -145,22 +196,69 @@ def to_pandas():
 #            values['#trip'] = trip_no
             row_list.append(values)
 
-    return pd.DataFrame(row_list, index=row_indices)
+    df = pd.DataFrame(row_list, index=row_indices)
+    # Incorporate trip matching
+    df['trip_id'] = get_trips_ids()
+    return df
 
 def to_csv(file_name):
     to_pandas().to_csv(file_name, index_label='driver_trip')
 
+def get_all_drivers():
+    return np.loadtxt('../data/drivers.txt', dtype=np.uint)#[:3]
+
+
+def get_driver_trips_ids(driver):
+    m=np.loadtxt('../data/mats/'+str(int(driver))+'_similarityMatrix.csv', delimiter=',')
+
+    trip_ids = []
+    for i in np.arange(1,m.shape[0]):
+        b_found = False
+        for j in np.arange(i):
+            if m[i,j] == 1:
+                trip_ids.append(trip_ids[j])
+                b_found = True
+                break
+        if b_found == False:
+            trip_ids.append(str(driver)+'_'+str(i))
+    return pd.DataFrame(trip_ids, index=np.array([str(driver)+'_'+str(i) for i in np.arange(1,m.shape[0])]))
+
+def get_trips_ids(all_drivers=None):
+    if all_drivers == None:
+        all_drivers = get_all_drivers()
+
+    trips_ids = pd.DataFrame()
+    for driver in all_drivers:
+        trips_ids = trips_ids.append(get_driver_trips_ids(driver))
+    return trips_ids
+
+
+
+#def to_vw():
+#    df = to_pandas()
+#    print(df.index.values)
+#    driver, trip = [], []
+#    for key in df.index.values:
+#        fields = key.split('_')
+#        driver.append(int(fields[0]))
+#        trip.append(int(fields[1]))
+#    df['driver'], df['trip'] = driver, trip
+#
+#    return df
+
 #def to_vw(file_name):
 #    df = to_pandas()
-#    with open('../data/dataset.txt', 'w') as f:
+#    with open('../data/dataset_vw.txt', 'w') as f:
+#
 #        for trip in df.iterrows():
 #            driver_trip = trip[0]
 #            features = trip[1]
-#            # What to pu as label?
+#            # What to put as label?
 
 # Ignore warning when dividing by zero
 np.seterr(divide='ignore', invalid='ignore')
 
 if __name__ == '__main__':
     to_csv('../data/Dataset.csv')
-
+    #print(to_pandas())
+    #to_vw()
