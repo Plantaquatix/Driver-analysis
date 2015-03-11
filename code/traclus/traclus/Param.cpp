@@ -7,14 +7,14 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		cout << "USAGE: traclus <input file>" << endl;
-		cout << "       - <input file>: a trajectory file" << endl;
+		cout << "USAGE: traclus <input directory>" << endl;
+		cout << "       - <input directory>: a directory with all the trajectories" << endl;
 		return 0;
 	}
 
 	CTraClusterDoc* document = new CTraClusterDoc;
 	
-	if (!document->OnOpenDocument(argv[1], argv[2]))
+	if (!document->OnOpenDocument(argv[1]))
 	{
 		cout << "Cannot open a trajectory file" << endl;
 		return 0;

@@ -26,8 +26,7 @@ public:
 	vector<CTrajectory*> m_trajectoryList;
 	vector<CCluster*> m_clusterList;
 public:
-	bool OnOpenDocument(char* inputFileName);
-	bool OnOpenDocument(char* DriverFile, char *DriverDirectory);
+	bool OnOpenDocument(char *DriverDirectory);
 	bool OnClusterGenerate(char* clusterFileName, float epsParam, int minLnsParam);
 	bool OnEstimateParameter(float& epsParam, int& minLnsParam);
 };
