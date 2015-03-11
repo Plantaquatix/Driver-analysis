@@ -205,7 +205,7 @@ def to_csv(file_name):
     to_pandas().to_csv(file_name, index_label='driver_trip')
 
 def get_all_drivers():
-    return np.loadtxt('../data/drivers.txt', dtype=np.uint)#[:3]
+    return np.loadtxt('../data/drivers.txt', dtype=np.uint)[:3]
 
 
 def get_driver_trips_ids(driver):
@@ -232,33 +232,16 @@ def get_trips_ids(all_drivers=None):
         trips_ids = trips_ids.append(get_driver_trips_ids(driver))
     return trips_ids
 
+def get_all_trips_from_driver(df):
 
+    for key in df.index.values:
+        [driver, trip] = key.split('_')
 
-#def to_vw():
-#    df = to_pandas()
-#    print(df.index.values)
-#    driver, trip = [], []
-#    for key in df.index.values:
-#        fields = key.split('_')
-#        driver.append(int(fields[0]))
-#        trip.append(int(fields[1]))
-#    df['driver'], df['trip'] = driver, trip
-#
-#    return df
-
-#def to_vw(file_name):
-#    df = to_pandas()
-#    with open('../data/dataset_vw.txt', 'w') as f:
-#
-#        for trip in df.iterrows():
-#            driver_trip = trip[0]
-#            features = trip[1]
-#            # What to put as label?
 
 # Ignore warning when dividing by zero
 np.seterr(divide='ignore', invalid='ignore')
 
 if __name__ == '__main__':
-    to_csv('../data/Dataset.csv')
-    #print(to_pandas())
+    #to_csv('../data/Dataset.csv')
+    print(to_pandas())
     #to_vw()
