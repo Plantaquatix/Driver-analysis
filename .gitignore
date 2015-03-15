@@ -1,5 +1,6 @@
 data/drivers/*
 data/sampleSubmission.csv
 data/mats/*
+data/mats2/*
 code/__pycache__/*
 code/traclus/traclus/x64/*
